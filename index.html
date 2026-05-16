@@ -1,69 +1,202 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-	<title>Инвентаризатор</title>
-	<meta charset="utf-8">
-    <meta name="viewport" content="initial-scale=1, maximum-scale=1">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black">
-    <link href="css/ratchet.css" rel="stylesheet">
-    <script src="js/ratchet.js"></script>	
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Inventarizator</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <style>
+    body { display: flex; min-height: 100vh; flex-direction: column; }
+    main { flex: 1 0 auto; }
+    .camera-container { position: relative; width: 100%; max-width: 500px; margin: 0 auto; }
+    .camera-container video { width: 100%; border-radius: 5px; }
+    .camera-container .overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); border: 2px solid red; width: 200px; height: 200px; }
+    .collection .collection-item { display: flex; align-items: center; justify-content: space-between; }
+    .fixed-action-btn { bottom: 90px; right: 23px; }
+    .status { padding: 10px; font-weight: bold; }
+  </style>
 </head>
 <body>
-	<header class="bar bar-nav">
-      <h1 class="title">Инвентаризатор</h1>
-    </header>
-    <div class="content">
-      <p class="content-padded">Программа для инвентаризации имущества на основе цифровой адресной платформы <a href="https://naviaddress.com">Naviaddress</a>.</p>
-      <p class="content-padded" style="text-align: center">
-        <img src="qr-code-icon.png" style="width:30%;padding-top:20px;padding-bottom: 20px">
-      </p>
-      <div class="card">
-        <ul class="table-view">
-          <li class="table-view-cell">
-            <a class="navigate-right" href="create.html" data-ignore="push">
-              <span class="media-object pull-left icon icon-compose"></span>
-              <div class="media-body"><strong>Создать карточку</strong></div>
-            </a>
-          </li>
-          <li class="table-view-cell">
-            <a class="push-right" href="scan.html" data-ignore="push">
-              <span class="media-object pull-left icon icon-bars"></span>
-              <div class="media-body"><strong>Сканировать QR-код</strong></div>
-            </a>
-          </li>
-          <li class="table-view-cell">
-            <a class="push-right" href="search.html" data-ignore="push">
-              <span class="media-object pull-left icon icon-search"></span>
-              <div class="media-body"><strong>Найти объект</strong></div>
-            </a>
-          </li>
-        </ul>
-      </div>
-      <p class="content-padded">С исходным кодом программы можно ознакомиться в репозитории: <a href="https://agershun.github.com/inventarizator">https://agershun.github.com/inventarizator</a></p>
-      <p class="content-padded">С другими примерами интеграции с платформой Naviaddress можно ознакомиться на сайте <a href="https://developer.naviaddress.com">https://developer.naviaddress.com</a></p>
-      
-      <p class="content-padded">(c) 2018, Андрей Гершун</p>
-      <br><br>
+  <nav class="green darken-2">
+    <div class="nav-wrapper">
+      <a href="#" class="brand-logo center">Inventarizator</a>
     </div>
+  </nav>
 
-    <nav class="bar bar-tab">
-      <a class="tab-item active" href="index.html" data-ignore="push">
-        <span class="icon icon-home"></span>
-        <span class="tab-label">Начало</span>
-      </a>
-      <a class="tab-item" href="create.html" data-ignore="push">
-        <span class="icon icon-compose"></span>
-        <span class="tab-label">Создать</span>
-      </a>
-      <a class="tab-item" href="scan.html" data-ignore="push">
-        <span class="icon icon-bars"></span>
-        <span class="tab-label">Сканировать</span>
-      </a>
-      <a class="tab-item" href="search.html" data-ignore="push">
-        <span class="icon icon-search"></span>
-        <span class="tab-label">Поиск</span>
-      </a>
-    </nav>
+  <main>
+    <div class="container">
+      <div class="row">
+        <div class="col s12">
+          <div class="card">
+            <div class="card-content">
+              <span class="card-title">Штрихкод</span>
+              <div id="camera" class="camera-container" style="display:none;">
+                <video id="preview"></video>
+                <div class="overlay"></div>
+              </div>
+              <div class="input-field">
+                <input id="barcode" type="text" placeholder="Отсканируйте или введите код">
+              </div>
+              <div class="status" id="status"></div>
+            </div>
+            <div class="card-action">
+              <button id="scan-btn" class="btn waves-effect waves-light green darken-2">
+                <i class="material-icons left">camera_alt</i> Сканировать
+              </button>
+              <button id="send-btn" class="btn waves-effect waves-light blue darken-2" style="margin-left: 10px;">
+                <i class="material-icons left">cloud_upload</i> Отправить в Google Таблицу
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col s12">
+          <ul class="collection with-header" id="items-list">
+            <li class="collection-header"><h5>Список товаров</h5></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div class="fixed-action-btn">
+    <button id="clear-btn" class="btn-floating btn-large red">
+      <i class="large material-icons">delete</i>
+    </button>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+  <script src="https://raw.githubusercontent.com/schmich/instascan-builds/master/instascan.min.js"></script>
+  <script>
+    // ---------- НАСТРОЙКИ ----------
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzidSqm4iVHR2eomUB9Awz5T1Y0gMT04mw1gD7szawmi2R2goQ9mQRDSiQ9XCNQQicA/exec";
+
+    // ---------- ПЕРЕМЕННЫЕ ----------
+    let scanner = null;
+    let items = JSON.parse(localStorage.getItem('inventItems') || '[]');
+    const barcodeInput = document.getElementById('barcode');
+    const cameraDiv = document.getElementById('camera');
+    const preview = document.getElementById('preview');
+    const scanBtn = document.getElementById('scan-btn');
+    const sendBtn = document.getElementById('send-btn');
+    const clearBtn = document.getElementById('clear-btn');
+    const itemsList = document.getElementById('items-list');
+    const statusDiv = document.getElementById('status');
+
+    // ---------- РЕНДЕР СПИСКА ----------
+    function renderItems() {
+      itemsList.innerHTML = '<li class="collection-header"><h5>Список товаров</h5></li>';
+      if (items.length === 0) {
+        itemsList.innerHTML += '<li class="collection-item">Пусто</li>';
+      } else {
+        items.forEach((item, index) => {
+          const li = document.createElement('li');
+          li.className = 'collection-item';
+          li.innerHTML = `<span>${item.code} <small>${new Date(item.time).toLocaleString()}</small></span>
+                          <i class="material-icons red-text" style="cursor:pointer;" data-index="${index}">delete</i>`;
+          itemsList.appendChild(li);
+        });
+      }
+      // Удаление по клику на иконку
+      document.querySelectorAll('.collection-item i').forEach(icon => {
+        icon.addEventListener('click', function() {
+          const idx = this.getAttribute('data-index');
+          items.splice(idx, 1);
+          localStorage.setItem('inventItems', JSON.stringify(items));
+          renderItems();
+        });
+      });
+    }
+
+    // ---------- ДОБАВЛЕНИЕ ТОВАРА ----------
+    function addItem(code) {
+      items.push({ code: code, time: Date.now() });
+      localStorage.setItem('inventItems', JSON.stringify(items));
+      renderItems();
+      statusDiv.textContent = `✅ Добавлен: ${code}`;
+      barcodeInput.value = '';
+    }
+
+    // ---------- СКАНЕР ----------
+    scanBtn.addEventListener('click', function() {
+      if (scanner) {
+        scanner.stop();
+        scanner = null;
+        cameraDiv.style.display = 'none';
+        scanBtn.innerHTML = '<i class="material-icons left">camera_alt</i> Сканировать';
+        return;
+      }
+
+      cameraDiv.style.display = 'block';
+      scanBtn.innerHTML = '<i class="material-icons left">stop</i> Остановить';
+
+      scanner = new Instascan.Scanner({ video: preview });
+      scanner.addListener('scan', function(content) {
+        addItem(content);
+        scanner.stop();
+        scanner = null;
+        cameraDiv.style.display = 'none';
+        scanBtn.innerHTML = '<i class="material-icons left">camera_alt</i> Сканировать';
+      });
+
+      Instascan.Camera.getCameras().then(function(cameras) {
+        if (cameras.length > 0) {
+          scanner.start(cameras[0]);
+        } else {
+          statusDiv.textContent = '❌ Камера не найдена';
+          cameraDiv.style.display = 'none';
+          scanBtn.innerHTML = '<i class="material-icons left">camera_alt</i> Сканировать';
+        }
+      }).catch(function(e) {
+        statusDiv.textContent = '❌ Ошибка доступа к камере';
+        cameraDiv.style.display = 'none';
+        scanBtn.innerHTML = '<i class="material-icons left">camera_alt</i> Сканировать';
+      });
+    });
+
+    // ---------- ОТПРАВКА В GOOGLE SHEETS ----------
+    sendBtn.addEventListener('click', function() {
+      if (items.length === 0) {
+        statusDiv.textContent = '❌ Нет отсканированных товаров';
+        return;
+      }
+
+      const lastCode = items[items.length - 1].code;
+      statusDiv.textContent = '⏳ Отправка...';
+      sendBtn.disabled = true;
+
+      fetch(SCRIPT_URL + '?barcode=' + encodeURIComponent(lastCode))
+        .then(response => response.json())
+        .then(data => {
+          statusDiv.textContent = data.message;
+          sendBtn.disabled = false;
+        })
+        .catch(error => {
+          statusDiv.textContent = '❌ Ошибка: ' + error.message;
+          sendBtn.disabled = false;
+        });
+    });
+
+    // ---------- ОЧИСТКА СПИСКА ----------
+    clearBtn.addEventListener('click', function() {
+      items = [];
+      localStorage.removeItem('inventItems');
+      renderItems();
+      statusDiv.textContent = '🗑️ Список очищен';
+    });
+
+    // ---------- РУЧНОЙ ВВОД ----------
+    barcodeInput.addEventListener('keypress', function(e) {
+      if (e.key === 'Enter' && this.value.trim().length > 0) {
+        addItem(this.value.trim());
+      }
+    });
+
+    // Инициализация
+    renderItems();
+  </script>
 </body>
 </html>
